@@ -5,21 +5,24 @@ import {
   type FormEvent,
   type MouseEvent,
   useState,
-  useTransition,
 } from "react";
 import { useRouter } from "next/navigation";
 
 import { loginWithPassword } from "@/app/actions/auth";
 import { createCard, type CreateCardInput } from "@/app/actions/cards";
 
-type SaveContactButtonProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, "onClick"> & {
+
+
+type SaveContactButtonProps = Omit<
+  ButtonHTMLAttributes<HTMLButtonElement>,
+  "onClick"
+> & {
   loading?: boolean;
   cardInput?: CreateCardInput | null;
 };
 
-const cx = (
-  ...classes: Array<string | false | null | undefined>
-): string => classes.filter(Boolean).join(" ");
+const cx = (...classes: Array<string | false | null | undefined>): string =>
+  classes.filter(Boolean).join(" ");
 
 const SaveContactButton = ({
   className,
@@ -37,14 +40,14 @@ const SaveContactButton = ({
   const [saveError, setSaveError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isLoginPending, startLoginTransition] = useTransition();
-  const [isSavePending, startSaveTransition] = useTransition();
+  const [isLoginPending, setIsLoginPending] = useState(false);
+  const [isSavePending, setIsSavePending] = useState(false);
 
   const busy = loading || isLoginPending || isSavePending;
 
   const isDisabled = requiresLogin || isSavePending || loading;
 
-  const handleButtonClick = (event: MouseEvent<HTMLButtonElement>) => {
+  const handleButtonClick = async (event: MouseEvent<HTMLButtonElement>) => {
     setSaveError(null);
     setSuccessMessage(null);
 
@@ -59,19 +62,20 @@ const SaveContactButton = ({
       return;
     }
 
-    startSaveTransition(async () => {
-      try {
-        await createCard(cardInput);
-        setSuccessMessage("Contacto guardado correctamente.");
-        router.refresh();
-      } catch (error) {
-        setSaveError(
-          error instanceof Error
-            ? error.message
-            : "No fue posible guardar el contacto.",
-        );
-      }
-    });
+    setIsSavePending(true);
+    try {
+      await createCard(cardInput);
+      setSuccessMessage("Contacto guardado correctamente.");
+      router.refresh();
+    } catch (error) {
+      setSaveError(
+        error instanceof Error
+          ? error.message
+          : "No fue posible guardar el contacto."
+      );
+    } finally {
+      setIsSavePending(false);
+    }
   };
 
   const handleCloseModal = () => {
@@ -84,20 +88,31 @@ const SaveContactButton = ({
     event.preventDefault();
     setLoginError(null);
 
-    startLoginTransition(async () => {
-      const result = await loginWithPassword({ email, password });
+    setIsLoginPending(true);
 
-      if (!result.success) {
-        setLoginError(result.error ?? "No fue posible iniciar sesión.");
-        return;
-      }
+    loginWithPassword({ email, password })
+      .then((result) => {
+        if (!result.success) {
+          setLoginError(result.error ?? "No fue posible iniciar sesión.");
+          return;
+        }
 
-      setIsModalOpen(false);
-      setEmail("");
-      setPassword("");
-      setLoginError(null);
-      router.refresh();
-    });
+        setIsModalOpen(false);
+        setEmail("");
+        setPassword("");
+        setLoginError(null);
+        router.refresh();
+      })
+      .catch((error) => {
+        setLoginError(
+          error instanceof Error
+            ? error.message
+            : "No fue posible iniciar sesión."
+        );
+      })
+      .finally(() => {
+        setIsLoginPending(false);
+      });
   };
 
   return (
@@ -108,7 +123,7 @@ const SaveContactButton = ({
           "flex w-full items-center justify-center gap-2 rounded-xl bg-[#1f1f22] px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-[#2a2a30] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#1f1f22]",
           isDisabled &&
             "cursor-not-allowed opacity-60 hover:bg-[#1f1f22] focus:ring-0 focus:ring-offset-0",
-          className,
+          className
         )}
         aria-disabled={isDisabled}
         disabled={busy}
@@ -146,7 +161,9 @@ const SaveContactButton = ({
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
           <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl">
             <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-zinc-900">Inicia sesión</h2>
+              <h2 className="text-lg font-semibold text-zinc-900">
+                Inicia sesión
+              </h2>
               <button
                 type="button"
                 onClick={handleCloseModal}
@@ -162,7 +179,10 @@ const SaveContactButton = ({
 
             <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
               <div className="space-y-1">
-                <label className="text-sm font-medium text-zinc-600" htmlFor="login-email">
+                <label
+                  className="text-sm font-medium text-zinc-600"
+                  htmlFor="login-email"
+                >
                   Correo electrónico
                 </label>
                 <input
@@ -178,7 +198,10 @@ const SaveContactButton = ({
               </div>
 
               <div className="space-y-1">
-                <label className="text-sm font-medium text-zinc-600" htmlFor="login-password">
+                <label
+                  className="text-sm font-medium text-zinc-600"
+                  htmlFor="login-password"
+                >
                   Contraseña
                 </label>
                 <input
@@ -193,7 +216,9 @@ const SaveContactButton = ({
                 />
               </div>
 
-              {loginError && <p className="text-sm text-red-500">{loginError}</p>}
+              {loginError && (
+                <p className="text-sm text-red-500">{loginError}</p>
+              )}
 
               <button
                 type="submit"
@@ -235,7 +260,7 @@ const SaveContactButton = ({
         <p
           className={cx(
             "mt-3 text-sm",
-            saveError ? "text-red-500" : "text-emerald-600",
+            saveError ? "text-red-500" : "text-emerald-600"
           )}
         >
           {saveError ?? successMessage}

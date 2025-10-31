@@ -1,6 +1,6 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server-client";
+import { SupabaseServer } from "@/lib/supabase/server-client";
 
 export type LoginWithPasswordInput = {
   email: string;
@@ -27,7 +27,7 @@ export const loginWithPassword = async (
     };
   }
 
-  const supabase = await createClient();
+  const supabase = await SupabaseServer();
 
   const { error } = await supabase.auth.signInWithPassword({ email, password });
 

@@ -1,5 +1,6 @@
 import { SaveContactButton } from "@/components/save-contact-button";
-import { createClient } from "@/lib/supabase/server-client";
+import { SupabaseServer } from "@/lib/supabase/server-client";
+import { getCardById } from "./actions/cards";
 
 type RawSearchParam = string | string[] | undefined;
 
@@ -15,15 +16,12 @@ export default async function Home({
 }) {
   const params = searchParams ? await searchParams : {};
 
-  const supabase = await createClient();
+  const supabase = await SupabaseServer();
   const { data: userData } = await supabase.auth.getUser();
   const isAuthenticated = Boolean(userData?.user);
 
-  const email = getStringParam(params.email);
-  const nombre = getStringParam(params.nombre);
-  const telefono = getStringParam(params.telefono);
-  const empresa = getStringParam(params.empresa);
   const id = getStringParam(params.id);
+  const cardInfo = await getCardById(id || "");
 
   return (
     <main className="flex min-h-screen w-full items-start justify-center bg-[#f4f5f9] px-6 py-16 sm:px-8">
@@ -38,7 +36,7 @@ export default async function Home({
             <div>
               <span className="text-sm font-medium text-zinc-500">Nombre</span>
               <p className="text-base font-semibold text-zinc-900">
-                {nombre || (
+                {cardInfo?.full_name || (
                   <span className="text-zinc-400">No proporcionado</span>
                 )}
               </p>
@@ -46,7 +44,7 @@ export default async function Home({
             <div className="mt-3 grid gap-3 text-sm text-zinc-700">
               <p>
                 <span className="font-medium text-zinc-500">Correo:&nbsp;</span>
-                {email || (
+                {cardInfo?.email || (
                   <span className="text-zinc-400">No proporcionado</span>
                 )}
               </p>
@@ -54,7 +52,7 @@ export default async function Home({
                 <span className="font-medium text-zinc-500">
                   Teléfono:&nbsp;
                 </span>
-                {telefono || (
+                {cardInfo?.phone || (
                   <span className="text-zinc-400">No proporcionado</span>
                 )}
               </p>
@@ -62,18 +60,27 @@ export default async function Home({
                 <span className="font-medium text-zinc-500">
                   Empresa:&nbsp;
                 </span>
-                {empresa || (
+                {cardInfo?.company || (
                   <span className="text-zinc-400">No proporcionado</span>
                 )}
-              </p>
-              <p>
-                <span className="font-medium text-zinc-500">ID:&nbsp;</span>
-                {id || <span className="text-zinc-400">No proporcionado</span>}
               </p>
             </div>
           </div>
 
-          <SaveContactButton disabled={!isAuthenticated} />
+          <SaveContactButton
+            disabled={!isAuthenticated}
+            cardInput={{
+              fullName: cardInfo?.full_name ?? "",
+              email: cardInfo?.email ?? "",
+              phone: cardInfo?.phone ?? "",
+              company: cardInfo?.company ?? "",
+              position: cardInfo?.position ?? "",
+              userId: userData?.user?.id ?? "",
+              imageUrl: cardInfo?.image_url ?? "",
+              codePhone: cardInfo?.code_phone ?? "",
+              isArchive: cardInfo?.is_archive ?? false,
+            }}
+          />
         </div>
       </section>
     </main>

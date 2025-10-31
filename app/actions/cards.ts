@@ -1,6 +1,6 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server-client";
+import { SupabaseServer } from "@/lib/supabase/server-client";
 
 export type CardRecord = {
   id: string;
@@ -40,14 +40,16 @@ const resolveUserId = async (providedUserId: string | undefined) => {
     return providedUserId;
   }
 
-  const supabase = await createClient();
+  const supabase = await SupabaseServer();
   const {
     data: { user },
     error,
   } = await supabase.auth.getUser();
 
   if (error) {
-    throw new Error(`No fue posible obtener el usuario autenticado: ${error.message}`);
+    throw new Error(
+      `No fue posible obtener el usuario autenticado: ${error.message}`
+    );
   }
 
   if (!user) {
@@ -57,7 +59,9 @@ const resolveUserId = async (providedUserId: string | undefined) => {
   return user.id;
 };
 
-export const createCard = async (input: CreateCardInput): Promise<CardRecord> => {
+export const createCard = async (
+  input: CreateCardInput
+): Promise<CardRecord> => {
   const fullName = normalizeString(input.fullName);
 
   if (!fullName) {
@@ -66,7 +70,7 @@ export const createCard = async (input: CreateCardInput): Promise<CardRecord> =>
 
   const userId = await resolveUserId(input.userId);
 
-  const supabase = await createClient();
+  const supabase = await SupabaseServer();
 
   const payload = {
     full_name: fullName,
@@ -93,6 +97,30 @@ export const createCard = async (input: CreateCardInput): Promise<CardRecord> =>
   return data;
 };
 
+export const getCardById = async (
+  id: string
+): Promise<CardRecord | null> => {
+  const trimmedId = id.trim();
+
+  if (!trimmedId) {
+    throw new Error("El ID de la tarjeta es obligatorio.");
+  }
+
+  const supabase = await SupabaseServer();
+
+  const { data, error } = await supabase
+    .from("cards")
+    .select()
+    .eq("id", trimmedId)
+    .maybeSingle<CardRecord>();
+
+  if (error) {
+    throw new Error(`No fue posible obtener la tarjeta: ${error.message}`);
+  }
+
+  return data ?? null;
+};
+
 export type CreateCardFormState = {
   success: boolean;
   error?: string;
@@ -111,7 +139,7 @@ const toBoolean = (value: FormDataEntryValue | null) => {
 
 export const createCardFromForm = async (
   _prevState: CreateCardFormState | undefined,
-  formData: FormData,
+  formData: FormData
 ): Promise<CreateCardFormState> => {
   try {
     const result = await createCard({
@@ -131,7 +159,10 @@ export const createCardFromForm = async (
       data: result,
     };
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Error desconocido al crear la tarjeta.";
+    const message =
+      error instanceof Error
+        ? error.message
+        : "Error desconocido al crear la tarjeta.";
 
     return {
       success: false,
