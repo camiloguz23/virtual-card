@@ -97,28 +97,56 @@ export const createCard = async (
   return data;
 };
 
+export type GetCardByIdResult = {
+  card: CardRecord | null;
+  error?: string;
+};
+
 export const getCardById = async (
-  id: string
-): Promise<CardRecord | null> => {
-  const trimmedId = id.trim();
+  id: string | null | undefined
+): Promise<GetCardByIdResult> => {
+  const trimmedId = id?.trim();
 
   if (!trimmedId) {
-    throw new Error("El ID de la tarjeta es obligatorio.");
+    return {
+      card: null,
+      error: "No se proporcionó un ID de tarjeta.",
+    };
   }
 
-  const supabase = await SupabaseServer();
+  try {
+    const supabase = await SupabaseServer();
 
-  const { data, error } = await supabase
-    .from("cards")
-    .select()
-    .eq("id", trimmedId)
-    .maybeSingle<CardRecord>();
+    const { data, error } = await supabase
+      .from("cards")
+      .select()
+      .eq("id", trimmedId)
+      .maybeSingle<CardRecord>();
 
-  if (error) {
-    throw new Error(`No fue posible obtener la tarjeta: ${error.message}`);
+    if (error) {
+      return {
+        card: null,
+        error: `No fue posible obtener la tarjeta: ${error.message}`,
+      };
+    }
+
+    if (!data) {
+      return {
+        card: null,
+        error: "No se encontró una tarjeta con el ID proporcionado.",
+      };
+    }
+
+    return { card: data };
+  } catch (error) {
+    return {
+      card: null,
+      error:
+        error instanceof Error
+          ? error.message
+          : "Ocurrió un error al buscar la tarjeta.",
+    };
   }
-
-  return data ?? null;
 };
 
 export type CreateCardFormState = {

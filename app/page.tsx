@@ -21,7 +21,9 @@ export default async function Home({
   const isAuthenticated = Boolean(userData?.user);
 
   const id = getStringParam(params.id);
-  const cardInfo = await getCardById(id || "");
+  const { card, error: cardError } = await getCardById(id);
+  const hasCard = Boolean(card);
+  const canSaveCard = isAuthenticated && hasCard;
 
   return (
     <main className="flex min-h-screen w-full items-start justify-center bg-[#f4f5f9] px-6 py-16 sm:px-8">
@@ -36,7 +38,7 @@ export default async function Home({
             <div>
               <span className="text-sm font-medium text-zinc-500">Nombre</span>
               <p className="text-base font-semibold text-zinc-900">
-                {cardInfo?.full_name || (
+                {card?.full_name || (
                   <span className="text-zinc-400">No proporcionado</span>
                 )}
               </p>
@@ -44,7 +46,7 @@ export default async function Home({
             <div className="mt-3 grid gap-3 text-sm text-zinc-700">
               <p>
                 <span className="font-medium text-zinc-500">Correo:&nbsp;</span>
-                {cardInfo?.email || (
+                {card?.email || (
                   <span className="text-zinc-400">No proporcionado</span>
                 )}
               </p>
@@ -52,7 +54,7 @@ export default async function Home({
                 <span className="font-medium text-zinc-500">
                   Teléfono:&nbsp;
                 </span>
-                {cardInfo?.phone || (
+                {card?.phone || (
                   <span className="text-zinc-400">No proporcionado</span>
                 )}
               </p>
@@ -60,27 +62,41 @@ export default async function Home({
                 <span className="font-medium text-zinc-500">
                   Empresa:&nbsp;
                 </span>
-                {cardInfo?.company || (
+                {card?.company || (
                   <span className="text-zinc-400">No proporcionado</span>
                 )}
               </p>
             </div>
           </div>
 
+          {!!cardError && (
+            <p className="text-sm text-red-500">{cardError}</p>
+          )}
+
           <SaveContactButton
-            disabled={!isAuthenticated}
-            cardInput={{
-              fullName: cardInfo?.full_name ?? "",
-              email: cardInfo?.email ?? "",
-              phone: cardInfo?.phone ?? "",
-              company: cardInfo?.company ?? "",
-              position: cardInfo?.position ?? "",
-              userId: userData?.user?.id ?? "",
-              imageUrl: cardInfo?.image_url ?? "",
-              codePhone: cardInfo?.code_phone ?? "",
-              isArchive: cardInfo?.is_archive ?? false,
-            }}
+            disabled={!canSaveCard}
+            cardInput={
+              card
+                ? {
+                    fullName: card.full_name ?? "",
+                    email: card.email,
+                    phone: card.phone,
+                    company: card.company,
+                    position: card.position,
+                    userId: userData?.user?.id,
+                    imageUrl: card.image_url,
+                    codePhone: card.code_phone,
+                    isArchive: card.is_archive,
+                  }
+                : undefined
+            }
           />
+
+          {!hasCard && !cardError && (
+            <p className="text-sm text-zinc-500">
+              No se encontró información para la tarjeta solicitada.
+            </p>
+          )}
         </div>
       </section>
     </main>

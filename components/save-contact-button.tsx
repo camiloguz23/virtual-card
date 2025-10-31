@@ -4,6 +4,8 @@ import {
   type ButtonHTMLAttributes,
   type FormEvent,
   type MouseEvent,
+  useEffect,
+  useRef,
   useState,
 } from "react";
 import { useRouter } from "next/navigation";
@@ -42,6 +44,34 @@ const SaveContactButton = ({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLoginPending, setIsLoginPending] = useState(false);
   const [isSavePending, setIsSavePending] = useState(false);
+  const [toast, setToast] = useState<
+    { message: string; variant: "success" | "error" }
+  | null>(null);
+  const toastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const triggerToast = (
+    message: string,
+    variant: "success" | "error" = "success"
+  ) => {
+    if (toastTimeoutRef.current) {
+      clearTimeout(toastTimeoutRef.current);
+    }
+
+    setToast({ message, variant });
+
+    toastTimeoutRef.current = setTimeout(() => {
+      setToast(null);
+      toastTimeoutRef.current = null;
+    }, 4000);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (toastTimeoutRef.current) {
+        clearTimeout(toastTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const busy = loading || isLoginPending || isSavePending;
 
@@ -54,24 +84,37 @@ const SaveContactButton = ({
     if (requiresLogin) {
       event.preventDefault();
       setIsModalOpen(true);
+      triggerToast(
+        "Debes iniciar sesión para guardar el contacto.",
+        "error"
+      );
       return;
     }
 
     if (!cardInput) {
       setSaveError("No hay datos del contacto para guardar.");
+      triggerToast("No hay datos del contacto para guardar.", "error");
       return;
     }
 
     setIsSavePending(true);
     try {
       await createCard(cardInput);
-      setSuccessMessage("Contacto guardado correctamente.");
+      const successText = "Contacto guardado correctamente.";
+      setSuccessMessage(successText);
+      triggerToast(successText, "success");
       router.refresh();
     } catch (error) {
       setSaveError(
         error instanceof Error
           ? error.message
-          : "No fue posible guardar el contacto."
+          : "No fue posible guardar el contacto.",
+      );
+      triggerToast(
+        error instanceof Error
+          ? error.message
+          : "No fue posible guardar el contacto.",
+        "error"
       );
     } finally {
       setIsSavePending(false);
@@ -94,6 +137,10 @@ const SaveContactButton = ({
       .then((result) => {
         if (!result.success) {
           setLoginError(result.error ?? "No fue posible iniciar sesión.");
+          triggerToast(
+            result.error ?? "No fue posible iniciar sesión.",
+            "error"
+          );
           return;
         }
 
@@ -101,13 +148,20 @@ const SaveContactButton = ({
         setEmail("");
         setPassword("");
         setLoginError(null);
+        triggerToast("Sesión iniciada correctamente.", "success");
         router.refresh();
       })
       .catch((error) => {
         setLoginError(
           error instanceof Error
             ? error.message
-            : "No fue posible iniciar sesión."
+            : "No fue posible iniciar sesión.",
+        );
+        triggerToast(
+          error instanceof Error
+            ? error.message
+            : "No fue posible iniciar sesión.",
+          "error"
         );
       })
       .finally(() => {
@@ -265,6 +319,28 @@ const SaveContactButton = ({
         >
           {saveError ?? successMessage}
         </p>
+      )}
+
+      {toast && (
+        <div
+          className={cx(
+            "pointer-events-none fixed inset-x-0 top-6 flex justify-center px-4",
+            toast.variant === "error" ? "text-red-100" : "text-emerald-100"
+          )}
+        >
+          <div
+            className={cx(
+              "pointer-events-auto w-full max-w-sm rounded-2xl px-4 py-3 text-sm shadow-lg",
+              toast.variant === "error"
+                ? "bg-red-500"
+                : "bg-emerald-500"
+            )}
+            role="status"
+            aria-live="polite"
+          >
+            {toast.message}
+          </div>
+        </div>
       )}
     </>
   );
