@@ -1,6 +1,6 @@
 "use server";
 
-import { createServerSupabaseClient } from "@/lib/supabase/server-client";
+import { createClient } from "@/lib/supabase/server-client";
 
 export type ProfileRecord = {
   id: string;
@@ -12,7 +12,7 @@ export type ProfileRecord = {
 };
 
 export const getCurrentProfile = async (): Promise<ProfileRecord | null> => {
-  const supabase = await createServerSupabaseClient();
+  const supabase = await createClient();
 
   const {
     data: { user },

@@ -1,6 +1,6 @@
 "use server";
 
-import { createServerSupabaseClient } from "@/lib/supabase/server-client";
+import { createClient } from "@/lib/supabase/server-client";
 
 export type CardRecord = {
   id: string;
@@ -40,7 +40,7 @@ const resolveUserId = async (providedUserId: string | undefined) => {
     return providedUserId;
   }
 
-  const supabase = await createServerSupabaseClient();
+  const supabase = await createClient();
   const {
     data: { user },
     error,
@@ -66,7 +66,7 @@ export const createCard = async (input: CreateCardInput): Promise<CardRecord> =>
 
   const userId = await resolveUserId(input.userId);
 
-  const supabase = await createServerSupabaseClient();
+  const supabase = await createClient();
 
   const payload = {
     full_name: fullName,
