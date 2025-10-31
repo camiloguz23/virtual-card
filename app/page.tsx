@@ -24,7 +24,7 @@ export default async function Home({
         <h1 className="text-lg font-semibold text-zinc-900">Mi Card</h1>
         <p className="text-sm text-zinc-500">Información recibida desde la URL.</p>
 
-        <div className="mt-6 space-y-4">
+        <div className="mt-6 space-y-6">
           <div className="flex flex-col rounded-2xl border border-zinc-200 bg-[#f9fafb] px-5 py-4 shadow-sm">
             <div>
               <span className="text-sm font-medium text-zinc-500">Nombre</span>
@@ -51,6 +51,13 @@ export default async function Home({
               </p>
             </div>
           </div>
+
+          <button
+            type="button"
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#1f1f22] px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-[#2a2a30] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#1f1f22]"
+          >
+            Guardar contacto
+          </button>
         </div>
       </section>
     </main>
