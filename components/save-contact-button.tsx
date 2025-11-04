@@ -13,8 +13,6 @@ import { useRouter } from "next/navigation";
 import { loginWithPassword } from "@/app/actions/auth";
 import { createCard, type CreateCardInput } from "@/app/actions/cards";
 
-
-
 type SaveContactButtonProps = Omit<
   ButtonHTMLAttributes<HTMLButtonElement>,
   "onClick"
@@ -44,9 +42,10 @@ const SaveContactButton = ({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLoginPending, setIsLoginPending] = useState(false);
   const [isSavePending, setIsSavePending] = useState(false);
-  const [toast, setToast] = useState<
-    { message: string; variant: "success" | "error" }
-  | null>(null);
+  const [toast, setToast] = useState<{
+    message: string;
+    variant: "success" | "error";
+  } | null>(null);
   const toastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const triggerToast = (
@@ -76,6 +75,7 @@ const SaveContactButton = ({
   const busy = loading || isLoginPending || isSavePending;
 
   const isDisabled = requiresLogin || isSavePending || loading;
+  const label = requiresLogin ? "Ingresar" : children;
 
   const handleButtonClick = async (event: MouseEvent<HTMLButtonElement>) => {
     setSaveError(null);
@@ -84,10 +84,7 @@ const SaveContactButton = ({
     if (requiresLogin) {
       event.preventDefault();
       setIsModalOpen(true);
-      triggerToast(
-        "Debes iniciar sesión para guardar el contacto.",
-        "error"
-      );
+      triggerToast("Debes iniciar sesión para guardar el contacto.", "error");
       return;
     }
 
@@ -108,7 +105,7 @@ const SaveContactButton = ({
       setSaveError(
         error instanceof Error
           ? error.message
-          : "No fue posible guardar el contacto.",
+          : "No fue posible guardar el contacto."
       );
       triggerToast(
         error instanceof Error
@@ -155,7 +152,7 @@ const SaveContactButton = ({
         setLoginError(
           error instanceof Error
             ? error.message
-            : "No fue posible iniciar sesión.",
+            : "No fue posible iniciar sesión."
         );
         triggerToast(
           error instanceof Error
@@ -175,8 +172,6 @@ const SaveContactButton = ({
         type="button"
         className={cx(
           "flex w-full items-center justify-center gap-2 rounded-xl bg-[#1f1f22] px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-[#2a2a30] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#1f1f22]",
-          isDisabled &&
-            "cursor-not-allowed opacity-60 hover:bg-[#1f1f22] focus:ring-0 focus:ring-offset-0",
           className
         )}
         aria-disabled={isDisabled}
@@ -208,7 +203,7 @@ const SaveContactButton = ({
             />
           </svg>
         )}
-        {children}
+        {label}
       </button>
 
       {isModalOpen && (
@@ -331,9 +326,7 @@ const SaveContactButton = ({
           <div
             className={cx(
               "pointer-events-auto w-full max-w-sm rounded-2xl px-4 py-3 text-sm shadow-lg",
-              toast.variant === "error"
-                ? "bg-red-500"
-                : "bg-emerald-500"
+              toast.variant === "error" ? "bg-red-500" : "bg-emerald-500"
             )}
             role="status"
             aria-live="polite"

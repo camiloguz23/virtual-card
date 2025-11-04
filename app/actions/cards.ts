@@ -1,6 +1,9 @@
 "use server";
 
-import { SupabaseServer } from "@/lib/supabase/server-client";
+import {
+  SupabaseServer,
+  SupabaseServiceRole,
+} from "@/lib/supabase/server-client";
 
 export type CardRecord = {
   id: string;
@@ -115,7 +118,7 @@ export const getCardById = async (
   }
 
   try {
-    const supabase = await SupabaseServer();
+    const supabase = SupabaseServiceRole();
 
     const { data, error } = await supabase
       .from("cards")
