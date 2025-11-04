@@ -1,6 +1,6 @@
 "use server";
 
-import { SupabaseServer } from "@/lib/supabase/server-client";
+import { SupabaseServer,SupabaseServiceRole } from "@/lib/supabase/server-client";
 
 export type ProfileRecord = {
   id: string;
@@ -31,6 +31,22 @@ export const getCurrentProfile = async (): Promise<ProfileRecord | null> => {
     .from("profiles")
     .select()
     .eq("id", user.id)
+    .maybeSingle<ProfileRecord>();
+
+  if (error) {
+    throw new Error(`No se pudo obtener el perfil: ${error.message}`);
+  }
+
+  return data;
+};
+
+export const getUserInfo = async (userId: string): Promise<ProfileRecord | null> => {
+  const supabase = SupabaseServiceRole();
+
+  const { data, error } = await supabase
+    .from("profiles")
+    .select()
+    .eq("id", userId)
     .maybeSingle<ProfileRecord>();
 
   if (error) {
