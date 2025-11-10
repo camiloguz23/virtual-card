@@ -1,5 +1,7 @@
 import { SupabaseServer } from "@/lib/supabase/server-client";
-import { getUserInfo, saveCardFromProfile } from "../actions/profile";
+import { getUserInfo } from "../actions/profile";
+import { SaveCardForm } from "./components/save-card-form";
+
 
 type RawSearchParam = string | string[] | undefined;
 
@@ -22,13 +24,6 @@ export default async function UserPage({
   const { data: userData } = await supabase.auth.getUser();
   const isAuthenticated = Boolean(userData?.user);
   const profile = await getUserInfo(id);
-
-  const canSaveCard = Boolean(isAuthenticated && profile?.name?.trim());
-  const helperMessage = !isAuthenticated
-    ? "Debes iniciar sesión para guardar la tarjeta."
-    : !profile
-    ? "No hay datos de perfil disponibles para guardar."
-    : "La tarjeta se guardará con la información mostrada.";
 
   return (
     <main className="flex min-h-screen w-full items-start justify-center bg-[#f4f5f9] px-6 py-16 sm:px-8">
@@ -103,64 +98,11 @@ export default async function UserPage({
             )}
           </div>
 
-          <div className="rounded-2xl border border-zinc-200 bg-white px-5 py-4 shadow-sm">
-            <div className="space-y-2">
-              <h2 className="text-base font-semibold text-zinc-900">Tarjeta digital</h2>
-              <p className="text-sm text-zinc-500">
-                Confirma los datos que se guardarán en tu tarjeta.
-              </p>
-            </div>
-
-            <div className="mt-4 space-y-3 text-sm text-zinc-700">
-              <p>
-                <span className="font-medium text-zinc-500">Nombre completo:&nbsp;</span>
-                {profile?.name || (
-                  <span className="text-zinc-400">No proporcionado</span>
-                )}
-              </p>
-              <p>
-                <span className="font-medium text-zinc-500">Correo:&nbsp;</span>
-                {profile?.email || (
-                  <span className="text-zinc-400">No proporcionado</span>
-                )}
-              </p>
-              <p>
-                <span className="font-medium text-zinc-500">Teléfono:&nbsp;</span>
-                {profile?.phone || (
-                  <span className="text-zinc-400">No proporcionado</span>
-                )}
-              </p>
-              <p>
-                <span className="font-medium text-zinc-500">Empresa:&nbsp;</span>
-                {profile?.company || (
-                  <span className="text-zinc-400">No proporcionado</span>
-                )}
-              </p>
-              <p>
-                <span className="font-medium text-zinc-500">Cargo:&nbsp;</span>
-                {profile?.position || (
-                  <span className="text-zinc-400">No proporcionado</span>
-                )}
-              </p>
-            </div>
-
-            <form action={saveCardFromProfile} className="mt-6 space-y-3">
-              {profile && (
-                <input type="hidden" name="profile_id" value={profile.id} />
-              )}
-              {id && <input type="hidden" name="requested_id" value={id} />}
-              <button
-                type="submit"
-                className={`w-full rounded-lg bg-zinc-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-zinc-400 focus:ring-offset-2 focus:ring-offset-white ${
-                  !canSaveCard ? "cursor-not-allowed opacity-60" : ""
-                }`}
-                disabled={!canSaveCard}
-              >
-                Guardar tarjeta
-              </button>
-              <p className="text-xs text-zinc-500">{helperMessage}</p>
-            </form>
-          </div>
+          <SaveCardForm
+            profile={profile}
+            requestedId={id || null}
+            isAuthenticated={isAuthenticated}
+          />
         </div>
       </section>
     </main>

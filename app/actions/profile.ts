@@ -1,7 +1,5 @@
 "use server";
 
-import { redirect } from "next/navigation";
-
 import { SupabaseServer, SupabaseServiceRole } from "@/lib/supabase/server-client";
 import { createCard } from "./cards";
 
@@ -47,67 +45,71 @@ export const getCurrentProfile = async (): Promise<ProfileRecord | null> => {
   return data;
 };
 
-const buildUserPageUrl = (
-  targetId: string | null | undefined,
-  extra?: Record<string, string>
-) => {
-  const searchParams = new URLSearchParams();
-  const trimmedId = targetId?.trim();
-
-  if (trimmedId) {
-    searchParams.set("id", trimmedId);
-  }
-
-  Object.entries(extra ?? {}).forEach(([key, value]) => {
-    if (value) {
-      searchParams.set(key, value);
-    }
-  });
-
-  const query = searchParams.toString();
-  return query ? `/user?${query}` : "/user";
+export type SaveCardFromProfileState = {
+  success: boolean;
+  error?: string;
 };
 
-export const saveCardFromProfile = async (formData: FormData) => {
-  const submittedId = formData.get("profile_id");
-  const requestedId = formData.get("requested_id");
-
-  const targetId =
-    typeof submittedId === "string" ? submittedId.trim() : "";
-  const fallbackId =
-    typeof requestedId === "string" ? requestedId.trim() : "";
-
-  const redirectId = targetId || fallbackId;
-
-  if (!targetId) {
-    redirect(
-      buildUserPageUrl(redirectId, {
-        error: "No se proporcionó un usuario válido.",
-      })
-    );
-  }
-
-  const profileRecord = await getUserInfo(targetId);
-
-  if (!profileRecord) {
-    redirect(
-      buildUserPageUrl(redirectId, {
-        error: "No se encontró información de perfil para este usuario.",
-      })
-    );
-  }
-
-  const fullName = profileRecord.name?.trim();
-
-  if (!fullName) {
-    redirect(
-      buildUserPageUrl(profileRecord.id, {
-        error: "El perfil no tiene un nombre configurado.",
-      })
-    );
-  }
-
+export const saveCardFromProfile = async (
+  _prevState: SaveCardFromProfileState | undefined,
+  formData: FormData
+): Promise<SaveCardFromProfileState> => {
   try {
+    const submittedId = formData.get("profile_id");
+    const requestedId = formData.get("requested_id");
+
+    const targetId =
+      typeof submittedId === "string" ? submittedId.trim() : "";
+    const fallbackId =
+      typeof requestedId === "string" ? requestedId.trim() : "";
+
+    const effectiveId = targetId || fallbackId;
+
+    if (!effectiveId) {
+      return {
+        success: false,
+        error: "No se proporcionó un usuario válido.",
+      };
+    }
+
+    const profileRecord = await getUserInfo(effectiveId);
+
+    if (!profileRecord) {
+      return {
+        success: false,
+        error: "No se encontró información de perfil para este usuario.",
+      };
+    }
+
+    const fullName = profileRecord.name?.trim();
+
+    if (!fullName) {
+      return {
+        success: false,
+        error: "El perfil no tiene un nombre configurado.",
+      };
+    }
+
+    const supabase = await SupabaseServer();
+    const {
+      data: { user },
+      error: sessionError,
+    } = await supabase.auth.getUser();
+
+    if (sessionError) {
+      return {
+        success: false,
+        error: `No fue posible obtener la sesión: ${sessionError.message}`,
+      };
+    }
+
+    if (!user) {
+      return {
+        success: false,
+        error: "Debes iniciar sesión para guardar la tarjeta.",
+      };
+    }
+
     await createCard({
       fullName,
       email: profileRecord.email,
@@ -115,25 +117,22 @@ export const saveCardFromProfile = async (formData: FormData) => {
       company: profileRecord.company,
       position: profileRecord.position,
       codePhone: profileRecord.code_phone,
-      userId: profileRecord.id,
+      userId: user.id,
     });
 
-    redirect(
-      buildUserPageUrl(profileRecord.id, {
-        saved: "1",
-      })
-    );
+    return {
+      success: true,
+    };
   } catch (error) {
     const message =
       error instanceof Error
         ? error.message
         : "No fue posible guardar la tarjeta.";
 
-    redirect(
-      buildUserPageUrl(profileRecord.id, {
-        error: message,
-      })
-    );
+    return {
+      success: false,
+      error: message,
+    };
   }
 };
 
