@@ -24,6 +24,8 @@ export default async function Home({
   const { card, error: cardError } = await getCardById(id);
   const hasCard = Boolean(card);
   const canSaveCard = isAuthenticated && hasCard;
+  const avatarUrl = card?.image_url?.trim() || undefined;
+  const displayedAvatarSrc = avatarUrl ?? "/default-avatar.svg";
 
   return (
     <main className="flex min-h-screen w-full items-start justify-center bg-[#f4f5f9] px-6 py-16 sm:px-8">
@@ -35,13 +37,23 @@ export default async function Home({
 
         <div className="mt-6 space-y-6">
           <div className="flex flex-col rounded-2xl border border-zinc-200 bg-[#f9fafb] px-5 py-4 shadow-sm">
-            <div>
-              <span className="text-sm font-medium text-zinc-500">Nombre</span>
-              <p className="text-base font-semibold text-zinc-900">
-                {card?.full_name || (
-                  <span className="text-zinc-400">No proporcionado</span>
-                )}
-              </p>
+            <div className="flex items-center gap-4">
+              <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-full border border-zinc-200 bg-zinc-100">
+                <img
+                  src={displayedAvatarSrc}
+                  alt={card?.full_name ?? "Contacto sin nombre"}
+                  className="h-full w-full object-cover"
+                  loading="lazy"
+                />
+              </div>
+              <div>
+                <span className="text-sm font-medium text-zinc-500">Nombre</span>
+                <p className="text-base font-semibold text-zinc-900">
+                  {card?.full_name || (
+                    <span className="text-zinc-400">No proporcionado</span>
+                  )}
+                </p>
+              </div>
             </div>
             <div className="mt-3 grid gap-3 text-sm text-zinc-700">
               <p>

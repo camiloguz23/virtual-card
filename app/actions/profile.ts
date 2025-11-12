@@ -1,6 +1,9 @@
 "use server";
 
-import { SupabaseServer, SupabaseServiceRole } from "@/lib/supabase/server-client";
+import {
+  SupabaseServer,
+  SupabaseServiceRole,
+} from "@/lib/supabase/server-client";
 import { createCard } from "./cards";
 
 export type ProfileRecord = {
@@ -25,7 +28,9 @@ export const getCurrentProfile = async (): Promise<ProfileRecord | null> => {
   } = await supabase.auth.getUser();
 
   if (sessionError) {
-    throw new Error(`No fue posible obtener la sesión: ${sessionError.message}`);
+    throw new Error(
+      `No fue posible obtener la sesión: ${sessionError.message}`
+    );
   }
 
   if (!user) {
@@ -58,8 +63,7 @@ export const saveCardFromProfile = async (
     const submittedId = formData.get("profile_id");
     const requestedId = formData.get("requested_id");
 
-    const targetId =
-      typeof submittedId === "string" ? submittedId.trim() : "";
+    const targetId = typeof submittedId === "string" ? submittedId.trim() : "";
     const fallbackId =
       typeof requestedId === "string" ? requestedId.trim() : "";
 
@@ -118,6 +122,7 @@ export const saveCardFromProfile = async (
       position: profileRecord.position,
       codePhone: profileRecord.code_phone,
       userId: user.id,
+      imageUrl: profileRecord.avatar_url,
     });
 
     return {
@@ -136,7 +141,9 @@ export const saveCardFromProfile = async (
   }
 };
 
-export const getUserInfo = async (userId: string): Promise<ProfileRecord | null> => {
+export const getUserInfo = async (
+  userId: string
+): Promise<ProfileRecord | null> => {
   const supabase = SupabaseServiceRole();
 
   const { data, error } = await supabase

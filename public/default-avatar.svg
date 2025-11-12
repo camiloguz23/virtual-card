@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-labelledby="title desc">
+  <title id="title">Avatar por defecto</title>
+  <desc id="desc">Ícono de usuario genérico para perfiles sin foto</desc>
+  <defs>
+    <linearGradient id="avatarGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#c7d2fe" />
+      <stop offset="100%" stop-color="#6366f1" />
+    </linearGradient>
+  </defs>
+  <rect width="128" height="128" rx="64" fill="url(#avatarGradient)" />
+  <g fill="#f8fafc">
+    <circle cx="64" cy="48" r="24" />
+    <path d="M104 107.2c0-21.09-17.91-38.2-40-38.2s-40 17.11-40 38.2V116h80v-8.8z" />
+  </g>
+</svg>
