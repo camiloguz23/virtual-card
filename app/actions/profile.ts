@@ -4,7 +4,7 @@ import {
   SupabaseServer,
   SupabaseServiceRole,
 } from "@/lib/supabase/server-client";
-import { createCard } from "./cards";
+import { CardRecord, createCard } from "./cards";
 
 export type ProfileRecord = {
   id: string;
@@ -85,7 +85,7 @@ export const saveCardFromProfile = async (
       };
     }
 
-    const fullName = profileRecord.name?.trim();
+    const fullName = profileRecord.full_name?.trim();
 
     if (!fullName) {
       return {
@@ -122,7 +122,7 @@ export const saveCardFromProfile = async (
       position: profileRecord.position,
       codePhone: profileRecord.code_phone,
       userId: user.id,
-      imageUrl: profileRecord.avatar_url,
+      imageUrl: profileRecord.image_url,
     });
 
     return {
@@ -143,18 +143,32 @@ export const saveCardFromProfile = async (
 
 export const getUserInfo = async (
   userId: string
-): Promise<ProfileRecord | null> => {
+): Promise<CardRecord | null> => {
   const supabase = SupabaseServiceRole();
 
   const { data, error } = await supabase
     .from("profiles")
     .select()
     .eq("id", userId)
-    .maybeSingle<ProfileRecord>();
+    .single();
 
   if (error) {
-    throw new Error(`No se pudo obtener el perfil: ${error.message}`);
+    console.log(error);
+    return null;
   }
 
-  return data;
+  return {
+    id: data.id,
+    full_name: data.name,
+    email: data.email,
+    phone: data.phone,
+    company: data.company,
+    position: data.position,
+    user_id: data.id,
+    image_url: data.avatar_url,
+    code_phone: data.code_phone,
+    is_archive: false,
+    created_at: data.created_at,
+    updated_at: data.updated_at,
+  };
 };

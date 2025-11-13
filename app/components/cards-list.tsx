@@ -2,7 +2,7 @@
 
 import type { CardRecord } from "@/app/actions/cards";
 import { LocalStorage } from "@/lib/helpers/localstorage";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 type CardsListProps = {
   cards: CardRecord | null;
@@ -36,7 +36,7 @@ export function CardsList({
     }
 
     const alreadyStored = storedCards.some((item) => item.id === cards.id);
-    const nextCards = alreadyStored ? storedCards : [...storedCards, cards];
+    const nextCards = alreadyStored ? storedCards : [cards, ...storedCards];
 
     if (!alreadyStored) {
       LocalStorage.setItemArray("cards", nextCards);
@@ -48,6 +48,74 @@ export function CardsList({
   useEffect(() => {
     getInfoCards();
   }, [cards]);
+
+  const sanitizeValue = useCallback((value: string | null | undefined) => {
+    if (!value) return "";
+    return value.replace(/\n|\r/g, " ").trim();
+  }, []);
+
+  const composeFullName = useCallback((fullName: string | null | undefined) => {
+    const safeName = sanitizeValue(fullName);
+    if (!safeName) return { fn: "", parts: ["", "", "", "", ""] };
+
+    const segments = safeName.split(" ");
+    const firstName = segments[0] ?? "";
+    const lastName = segments.slice(1).join(" ");
+    return {
+      fn: safeName,
+      parts: [lastName, firstName, "", "", ""],
+    };
+  }, [sanitizeValue]);
+
+  const generateVCard = useCallback(
+    (card: CardRecord) => {
+      const nameInfo = composeFullName(card.full_name);
+      const email = sanitizeValue(card.email);
+      const phone = sanitizeValue(card.phone);
+      const company = sanitizeValue(card.company);
+      const position = sanitizeValue(card.position);
+
+      const lines = [
+        "BEGIN:VCARD",
+        "VERSION:3.0",
+        `FN:${nameInfo.fn}`,
+        `N:${nameInfo.parts.join(";")}`,
+        email ? `EMAIL;TYPE=INTERNET:${email}` : null,
+        phone ? `TEL;TYPE=CELL:${phone}` : null,
+        company ? `ORG:${company}` : null,
+        position ? `TITLE:${position}` : null,
+        "END:VCARD",
+      ].filter(Boolean) as string[];
+
+      return lines.join("\n");
+    },
+    [composeFullName, sanitizeValue]
+  );
+
+  const downloadVCard = useCallback(
+    (card: CardRecord) => {
+      const isBrowser = typeof window !== "undefined";
+      if (!isBrowser) return;
+
+      const vcardContent = generateVCard(card);
+      const blob = new Blob([vcardContent], {
+        type: "text/vcard;charset=utf-8",
+      });
+      const url = window.URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+
+      const safeName = sanitizeValue(card.full_name) || "contacto";
+      const fileName = `${safeName.toLowerCase().replace(/[^a-z0-9]+/g, "-")}.vcf`;
+
+      anchor.href = url;
+      anchor.download = fileName;
+      document.body.appendChild(anchor);
+      anchor.click();
+      document.body.removeChild(anchor);
+      window.URL.revokeObjectURL(url);
+    },
+    [generateVCard, sanitizeValue]
+  );
 
   return (
     <ul className={listClasses}>
@@ -113,6 +181,15 @@ export function CardsList({
                       <span className="text-zinc-400">No proporcionado</span>
                     )}
                   </p>
+                </div>
+                <div className="pt-3">
+                  <button
+                    type="button"
+                    onClick={() => downloadVCard(card)}
+                    className="inline-flex items-center rounded-lg bg-zinc-900 px-4 py-2 text-xs font-semibold text-white transition hover:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-zinc-400 focus:ring-offset-2 focus:ring-offset-white"
+                  >
+                    Guardar vCard
+                  </button>
                 </div>
               </div>
             </div>
