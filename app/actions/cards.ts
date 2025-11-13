@@ -152,6 +152,91 @@ export const getCardById = async (
   }
 };
 
+export type GetCardsByIdsResult = {
+  cards: CardRecord | null;
+  error?: string;
+};
+
+export const getCardsByIds = async (
+  id: string
+): Promise<GetCardsByIdsResult> => {
+  try {
+    const supabase = SupabaseServiceRole();
+
+    const { data, error } = await supabase
+      .from("cards")
+      .select()
+      .eq("id", id)
+      .single();
+
+    if (error) {
+      return {
+        cards: null,
+        error: `No fue posible obtener las tarjetas solicitadas: ${error.message}`,
+      };
+    }
+
+    return {
+      cards: data,
+    };
+  } catch (error) {
+    return {
+      cards: null,
+      error:
+        error instanceof Error
+          ? error.message
+          : "Ocurrió un error al obtener las tarjetas solicitadas.",
+    };
+  }
+};
+
+export type GetCardsByUserIdResult = {
+  cards: CardRecord[];
+  error?: string;
+};
+
+export const getCardsByUserId = async (
+  userId: string | null | undefined
+): Promise<GetCardsByUserIdResult> => {
+  const trimmedUserId = userId?.trim();
+
+  if (!trimmedUserId) {
+    return {
+      cards: [],
+      error: "No se proporcionó un usuario válido.",
+    };
+  }
+
+  try {
+    const supabase = SupabaseServiceRole();
+
+    const { data, error } = await supabase
+      .from("cards")
+      .select()
+      .eq("user_id", trimmedUserId)
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      return {
+        cards: [],
+        error: `No fue posible obtener las tarjetas: ${error.message}`,
+      };
+    }
+
+    return {
+      cards: (data ?? []) as CardRecord[],
+    };
+  } catch (error) {
+    return {
+      cards: [],
+      error:
+        error instanceof Error
+          ? error.message
+          : "Ocurrió un error al obtener las tarjetas.",
+    };
+  }
+};
+
 export type CreateCardFormState = {
   success: boolean;
   error?: string;

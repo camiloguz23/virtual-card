@@ -1,4 +1,6 @@
 import { SupabaseServer } from "@/lib/supabase/server-client";
+import { CardsList } from "@/app/components/cards-list";
+import { getCardsByUserId, type CardRecord } from "../actions/cards";
 import { getUserInfo } from "../actions/profile";
 import { SaveCardForm } from "./components/save-card-form";
 
@@ -22,10 +24,45 @@ export default async function UserPage({
 
   const supabase = await SupabaseServer();
   const { data: userData } = await supabase.auth.getUser();
-  const isAuthenticated = Boolean(userData?.user);
+  const userId = userData?.user?.id ?? null;
+  const isAuthenticated = Boolean(userId);
   const profile = await getUserInfo(id);
   const avatarUrl = profile?.avatar_url?.trim() || undefined;
   const displayedAvatarSrc = avatarUrl ?? "/default-avatar.svg";
+  const { cards: existingCards, error: cardsError } = userId
+    ? await getCardsByUserId(userId)
+    : { cards: [], error: undefined };
+  const hasCards = existingCards.length > 0;
+  const mockCards: CardRecord[] = [
+    {
+      id: "mock-1",
+      full_name: "Sofía Hernández",
+      email: "sofia.hernandez@devontic.com",
+      phone: "+57 301 555 4444",
+      company: "Devontic",
+      position: "Product Manager",
+      user_id: "mock-user",
+      image_url: null,
+      code_phone: "+57",
+      is_archive: false,
+      created_at: null,
+      updated_at: null,
+    },
+    {
+      id: "mock-2",
+      full_name: "Carlos Mendoza",
+      email: "carlos.mendoza@ejemplo.com",
+      phone: "+57 315 123 4567",
+      company: "Ejemplo S.A.",
+      position: "Director Comercial",
+      user_id: "mock-user",
+      image_url: null,
+      code_phone: "+57",
+      is_archive: false,
+      created_at: null,
+      updated_at: null,
+    },
+  ];
 
   return (
     <main className="flex min-h-screen w-full items-start justify-center bg-[#f4f5f9] px-6 py-16 sm:px-8">
@@ -108,6 +145,49 @@ export default async function UserPage({
                 No se encontró información de perfil para el usuario proporcionado.
               </p>
             )}
+
+            <div className="rounded-2xl border border-zinc-200 bg-[#f9fafb] px-5 py-4 shadow-sm">
+              <div className="space-y-1">
+                <h2 className="text-sm font-semibold text-zinc-900">Tus tarjetas guardadas</h2>
+                <p className="text-xs text-zinc-500">
+                  Consulta las tarjetas que has ido registrando.
+                </p>
+              </div>
+
+              <div className="mt-4 space-y-6">
+                {cardsError ? (
+                  <p className="text-sm text-red-500">{cardsError}</p>
+                ) : (
+                  <>
+                    {!isAuthenticated ? (
+                      <p className="text-sm text-zinc-500">
+                        Debes iniciar sesión para ver tus tarjetas guardadas. Abajo tienes un ejemplo de cómo se mostrarán.
+                      </p>
+                    ) : hasCards ? (
+                      <div className="space-y-3">
+                        <p className="text-sm font-medium text-zinc-600">
+                          Tus tarjetas registradas
+                        </p>
+                        <CardsList cards={existingCards} layout="stack" />
+                      </div>
+                    ) : (
+                      <p className="text-sm text-zinc-500">
+                        Aún no has guardado tarjetas. Usa el formulario para crear una y mira el ejemplo más abajo.
+                      </p>
+                    )}
+
+                    <div className="space-y-3">
+                      <p className="text-sm font-medium text-zinc-600">Vista de ejemplo</p>
+                      <CardsList
+                        cards={mockCards}
+                        layout="stack"
+                        showExampleBadge
+                      />
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
           </div>
 
           <SaveCardForm
