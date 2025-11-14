@@ -8,7 +8,7 @@ export type LoginWithPasswordInput = {
 };
 
 export type LoginWithPasswordResult = {
-  success: boolean;
+  success: string | false;
   error?: string;
 };
 
@@ -29,7 +29,7 @@ export const loginWithPassword = async (
 
   const supabase = await SupabaseServer();
 
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  const { data,error } = await supabase.auth.signInWithPassword({ email, password });
 
   if (error) {
     return {
@@ -38,5 +38,5 @@ export const loginWithPassword = async (
     };
   }
 
-  return { success: true };
+  return { success: data.user.id };
 };

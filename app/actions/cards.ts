@@ -4,6 +4,7 @@ import {
   SupabaseServer,
   SupabaseServiceRole,
 } from "@/lib/supabase/server-client";
+import { CardInsert } from "@/lib/type/inert-card";
 
 export type CardRecord = {
   id: string;
@@ -92,6 +93,22 @@ export const createCard = async (
     .insert(payload)
     .select()
     .single<CardRecord>();
+
+  if (error) {
+    throw new Error(`No se pudo crear la tarjeta: ${error.message}`);
+  }
+
+  return data;
+};
+
+export const createCardArray = async (
+  input: CardInsert[]
+): Promise<CardRecord[]> => {
+  const supabase = await SupabaseServer();
+  const { data, error } = await supabase
+    .from("cards")
+    .insert(input)
+    .select()
 
   if (error) {
     throw new Error(`No se pudo crear la tarjeta: ${error.message}`);
