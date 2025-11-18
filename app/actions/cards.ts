@@ -105,10 +105,24 @@ export const createCardArray = async (
   input: CardInsert[]
 ): Promise<CardRecord[]> => {
   const supabase = await SupabaseServer();
+  const { data, error } = await supabase.from("cards").insert(input).select();
+
+  if (error) {
+    throw new Error(`No se pudo crear la tarjeta: ${error.message}`);
+  }
+
+  return data;
+};
+
+export const createCardSimple = async (
+  input: CardInsert
+): Promise<CardRecord> => {
+  const supabase = await SupabaseServer();
   const { data, error } = await supabase
     .from("cards")
     .insert(input)
     .select()
+    .single();
 
   if (error) {
     throw new Error(`No se pudo crear la tarjeta: ${error.message}`);
@@ -302,4 +316,27 @@ export const createCardFromForm = async (
       error: message,
     };
   }
+};
+
+export const isCardRepeat = async ({
+  id,
+  user_id,
+}: {
+  id: string;
+  user_id: string;
+}): Promise<boolean> => {
+  const supabase = SupabaseServiceRole();
+
+  const { data, error } = await supabase
+    .from("cards")
+    .select()
+    .eq("id", id)
+    .eq("user_id", user_id)
+    .single();
+
+  if (error) {
+    return false;
+  }
+
+  return !!data.id;
 };

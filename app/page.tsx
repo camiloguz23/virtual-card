@@ -1,7 +1,9 @@
+import { SupabaseServer } from "@/lib/supabase/server-client";
 import { getCardsByIds, type CardRecord } from "./actions/cards";
 import { getUserInfo } from "./actions/profile";
 import { CardsList } from "./components/cards-list";
 import { LoginModalButton } from "./components/login-modal-button";
+import { ViewCard } from "./components/view-card";
 
 type RawSearchParam = string;
 
@@ -11,6 +13,8 @@ export default async function Home({
   searchParams?: Promise<Record<string, RawSearchParam>>;
 }) {
   const params = searchParams ? await searchParams : {};
+  const supabase = await SupabaseServer();
+  const { data: userData } = await supabase.auth.getUser();
 
   const { cards, error: cardsError } = params.id
     ? await getCardsByIds(params?.id ?? "")
@@ -28,13 +32,17 @@ export default async function Home({
               Información compartida desde la URL.
             </p>
           </div>
-          <LoginModalButton />
+          {userData.user?.id ? null : <LoginModalButton />}
         </header>
-        <CardsList
-          cards={params.userId ? profile : cards}
-          layout="grid"
-          showExampleBadge={!cards}
-        />
+        {userData.user?.id ? (
+          <ViewCard infoCard={cards} userId={userData.user?.id}/>
+        ) : (
+          <CardsList
+            cards={params.userId ? profile : cards}
+            layout="grid"
+            showExampleBadge={!cards}
+          />
+        )}
       </section>
     </main>
   );
