@@ -188,11 +188,6 @@ export function CardsList({
                       </p>
                     </div>
                   </div>
-                  {showExampleBadge && (
-                    <span className="inline-flex items-center rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-amber-700">
-                      {exampleBadgeLabel}
-                    </span>
-                  )}
                 </div>
 
                 <div className="rounded-2xl border border-zinc-100 bg-zinc-50/60 p-4">
