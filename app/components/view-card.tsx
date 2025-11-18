@@ -1,7 +1,11 @@
 "use client";
 
-import { createCardSimple, getCardsByIds, isCardRepeat, type CardRecord } from "../actions/cards";
-import { useCallback } from "react";
+import {
+  createCardSimple,
+  isCardRepeat,
+  type CardRecord,
+} from "../actions/cards";
+import { useCallback, useState } from "react";
 
 type ViewCardProps = {
   infoCard?: CardRecord | null;
@@ -40,6 +44,10 @@ const composeNameParts = (fullName: string | null | undefined) => {
 export function ViewCard({ infoCard, userId, className }: ViewCardProps) {
   const avatarSrc = infoCard?.image_url?.trim() || "/default-avatar.svg";
   const hasCustomAvatar = Boolean(infoCard?.image_url?.trim());
+  const [saveFeedback, setSaveFeedback] = useState<{
+    message: string;
+    variant: "success" | "error";
+  } | null>(null);
 
   const generateVCard = useCallback(() => {
     if (!infoCard) return null;
@@ -94,25 +102,38 @@ export function ViewCard({ infoCard, userId, className }: ViewCardProps) {
 
   const onSaveCard = async () => {
     if (!infoCard?.full_name) return;
+    setSaveFeedback(null);
     const isRepeatCard = await isCardRepeat({
       id: infoCard.id,
       user_id: userId,
     });
     if (isRepeatCard) {
+
+      setSaveFeedback({ message: "Guardado exitoso", variant: "success" });
       return;
     }
-    const card = await createCardSimple({
-      full_name: infoCard.full_name,
-      email: infoCard.email,
-      phone: infoCard.phone,
-      company: infoCard.company,
-      position: infoCard.position,
-      user_id: infoCard.user_id,
-      image_url: infoCard.image_url,
-      code_phone: infoCard.code_phone,
-      is_archive: infoCard.is_archive,
-    });
-    
+    try {
+      await createCardSimple({
+        full_name: infoCard.full_name,
+        email: infoCard.email,
+        phone: infoCard.phone,
+        company: infoCard.company,
+        position: infoCard.position,
+        user_id: infoCard.user_id,
+        image_url: infoCard.image_url,
+        code_phone: infoCard.code_phone,
+        is_archive: infoCard.is_archive,
+      });
+      setSaveFeedback({ message: "Guardado exitoso", variant: "success" });
+    } catch (error) {
+      setSaveFeedback({
+        message:
+          error instanceof Error
+            ? error.message
+            : "No se pudo guardar la tarjeta.",
+        variant: "error",
+      });
+    }
   };
 
   return (
@@ -197,6 +218,20 @@ export function ViewCard({ infoCard, userId, className }: ViewCardProps) {
             Guardar
           </button>
         </div>
+        {saveFeedback && (
+          <div
+            className={cx(
+              "mt-4 rounded-3xl border px-5 py-4 text-base font-semibold",
+              saveFeedback.variant === "success"
+                ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                : "border-red-200 bg-red-50 text-red-600"
+            )}
+            role="status"
+            aria-live="polite"
+          >
+            {saveFeedback.message}
+          </div>
+        )}
       </div>
     </div>
   );
