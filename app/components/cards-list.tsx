@@ -243,9 +243,8 @@ export function CardsList({
               <span className="font-bold">{MAX_CARDS} cards guardadas</span> en
               este dispositivo.
               <br className="hidden sm:block" />
-              Instala la app para tener{" "}
-              <span className="font-bold">acceso ilimitado</span> al guardado de
-              tus cards.
+              Regístrate en la app para seguir guardando y, si aún no la tienes,
+              descárgala para disfrutar de acceso ilimitado a tus cards.
             </p>
             <button
               type="button"
@@ -266,9 +265,9 @@ export function CardsList({
                   Crea tu cuenta y guarda más cards
                 </h2>
                 <p className="mt-2 text-xs text-zinc-600 sm:text-sm">
-                  Regístrate o inicia sesión para desbloquear el guardado
-                  ilimitado de tus cards y acceder a todas tus tarjetas desde
-                  cualquier lugar.
+                  Regístrate en la app para seguir guardando sin límite y, si
+                  aún no la tienes instalada, descárgala para acceder a todas
+                  tus tarjetas desde cualquier lugar.
                 </p>
               </div>
               <button
@@ -281,12 +280,14 @@ export function CardsList({
               </button>
             </div>
             <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
-              <a
-                href="/login"
-                className="inline-flex items-center justify-center rounded-lg border border-zinc-300 px-4 py-2 text-xs font-semibold text-zinc-700 transition hover:bg-zinc-50 focus:outline-none focus:ring-2 focus:ring-zinc-300 focus:ring-offset-2 focus:ring-offset-white"
+             
+              <button
+                type="button"
+                onClick={() => setIsAuthModalOpen(false)}
+                className="inline-flex items-center justify-center rounded-lg bg-zinc-900 px-4 py-2 text-xs font-semibold text-white transition hover:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-zinc-500 focus:ring-offset-2 focus:ring-offset-white"
               >
-                Iniciar sesión
-              </a>
+                Cerrar
+              </button>
             </div>
           </div>
         </div>
