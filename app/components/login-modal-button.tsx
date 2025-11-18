@@ -5,7 +5,8 @@ import { type FormEvent, useState } from "react";
 
 import { loginWithPassword } from "@/app/actions/auth";
 import { LocalStorage } from "@/lib/helpers/localstorage";
-import { createCardArray } from "../actions/cards";
+import { createCardArray, isCardRepeat } from "../actions/cards";
+import type { CardInsert } from "@/lib/type/inert-card";
 
 const cx = (...classes: Array<string | undefined | null | false>) =>
   classes.filter(Boolean).join(" ");
@@ -51,17 +52,40 @@ export function LoginModalButton({
       return;
     }
 
-
     const localStotageList = LocalStorage.getItemArray("cards");
+    if (localStotageList.length > 0) {
+      const userId = result.success as string;
+      const payload: CardInsert[] = [];
 
-    if(localStotageList.length > 0) {
-      const payload = localStotageList.map(item => ({...item,user_id: result.success as string}))
-      const respose = await createCardArray(payload)
+      for (const item of localStotageList) {
+        if (!item.full_name) {
+          continue;
+        }
 
-      if (respose.length > 0) {
-        LocalStorage.removeItem("cards")
+        const alreadySaved = await isCardRepeat({
+          id: item.id,
+          user_id: userId,
+        });
+
+        if (alreadySaved) {
+          continue;
+        }
+
+        const { id: _ignoredId, created_at, updated_at, ...rest } = item;
+        payload.push({ ...rest, user_id: userId });
       }
 
+      console.log("validando repetir", payload);
+
+      if (payload.length > 0) {
+        console.log("creando tarjetas", payload);
+        const response = await createCardArray(payload);
+
+        if (response.length > 0) {
+          console.log("tarjetas creadas", response);
+          LocalStorage.removeItem("cards");
+        }
+      }
     }
 
     setIsModalOpen(false);
@@ -122,7 +146,7 @@ export function LoginModalButton({
                   required
                   value={email}
                   onChange={(event) => setEmail(event.target.value)}
-                  className="w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm focus:border-[#1f1f22] focus:outline-none focus:ring-2 focus:ring-[#1f1f22]"
+                  className="w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-[#1f1f22] focus:outline-none focus:ring-2 focus:ring-[#1f1f22]"
                   placeholder="tu@correo.com"
                 />
               </div>
@@ -141,7 +165,7 @@ export function LoginModalButton({
                   required
                   value={password}
                   onChange={(event) => setPassword(event.target.value)}
-                  className="w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm focus:border-[#1f1f22] focus:outline-none focus:ring-2 focus:ring-[#1f1f22]"
+                  className="w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-[#1f1f22] focus:outline-none focus:ring-2 focus:ring-[#1f1f22]"
                   placeholder="••••••"
                 />
               </div>

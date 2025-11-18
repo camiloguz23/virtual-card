@@ -19,6 +19,23 @@ const listBaseClasses: Record<Required<CardsListProps>["layout"], string> = {
   stack: "space-y-3",
 };
 
+const sanitizeValue = (value: string | null | undefined) => {
+  if (!value) return "";
+  return value.replace(/\n|\r/g, " ").trim();
+};
+
+const safeValue = (value: string | null | undefined, fallback = "-") => {
+  const trimmed = sanitizeValue(value);
+  return trimmed && trimmed.length > 0 ? trimmed : fallback;
+};
+
+const getInitials = (value: string | null | undefined) => {
+  const safeName = sanitizeValue(value);
+  if (!safeName) return "?";
+  const [first = "", second = ""] = safeName.split(" ");
+  return `${first.charAt(0)}${second.charAt(0)}`.toUpperCase() || "?";
+};
+
 export function CardsList({
   cards,
   layout = "grid",
@@ -64,26 +81,18 @@ export function CardsList({
     getInfoCards();
   }, [cards]);
 
-  const sanitizeValue = useCallback((value: string | null | undefined) => {
-    if (!value) return "";
-    return value.replace(/\n|\r/g, " ").trim();
+  const composeFullName = useCallback((fullName: string | null | undefined) => {
+    const safeName = sanitizeValue(fullName);
+    if (!safeName) return { fn: "", parts: ["", "", "", "", ""] };
+
+    const segments = safeName.split(" ");
+    const firstName = segments[0] ?? "";
+    const lastName = segments.slice(1).join(" ");
+    return {
+      fn: safeName,
+      parts: [lastName, firstName, "", "", ""],
+    };
   }, []);
-
-  const composeFullName = useCallback(
-    (fullName: string | null | undefined) => {
-      const safeName = sanitizeValue(fullName);
-      if (!safeName) return { fn: "", parts: ["", "", "", "", ""] };
-
-      const segments = safeName.split(" ");
-      const firstName = segments[0] ?? "";
-      const lastName = segments.slice(1).join(" ");
-      return {
-        fn: safeName,
-        parts: [lastName, firstName, "", "", ""],
-      };
-    },
-    [sanitizeValue]
-  );
 
   const generateVCard = useCallback(
     (card: CardRecord) => {
@@ -107,7 +116,7 @@ export function CardsList({
 
       return lines.join("\n");
     },
-    [composeFullName, sanitizeValue]
+    [composeFullName]
   );
 
   const downloadVCard = useCallback(
@@ -134,84 +143,92 @@ export function CardsList({
       document.body.removeChild(anchor);
       window.URL.revokeObjectURL(url);
     },
-    [generateVCard, sanitizeValue]
+    [generateVCard]
   );
 
   return (
     <>
       <ul className={listClasses}>
         {cardsList.map((card) => {
-          const avatarUrl = card.image_url?.trim() || undefined;
-          const displayedAvatarSrc = avatarUrl ?? "/default-avatar.svg";
+          const avatarUrl = card.image_url?.trim() || "";
+          const hasCustomAvatar = Boolean(avatarUrl);
+          const displayedAvatarSrc = avatarUrl || "/default-avatar.svg";
 
           return (
             <li
               key={card.id}
-              className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm transition hover:border-zinc-300 hover:shadow-md"
+              className="rounded-[28px] border border-zinc-200 bg-white p-4 text-zinc-900 shadow-sm transition hover:border-zinc-300 hover:shadow-md sm:p-5"
             >
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-5">
-                <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full border border-zinc-200 bg-zinc-100">
-                  <img
-                    src={displayedAvatarSrc}
-                    alt={card.full_name ?? "Contacto sin nombre"}
-                    className="h-full w-full object-cover"
-                    loading="lazy"
-                  />
-                </div>
-                <div className="flex-1 space-y-2 text-sm text-zinc-600">
-                  <div>
-                    <span className="text-xs font-medium uppercase tracking-wide text-zinc-400">
-                      Nombre
+              <div className="flex flex-col gap-5">
+                <div className="flex flex-wrap items-start gap-3">
+                  <div className="flex flex-1 items-center gap-3">
+                    <div className="flex h-16 w-28 items-center justify-center rounded-2xl border border-zinc-200 bg-zinc-50 sm:h-18 sm:w-32">
+                      {hasCustomAvatar ? (
+                        <img
+                          src={displayedAvatarSrc}
+                          alt={card.full_name ?? "Contacto sin nombre"}
+                          className="max-h-full max-w-full object-contain"
+                          loading="lazy"
+                        />
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center text-2xl font-semibold uppercase text-zinc-400">
+                          {getInitials(card.full_name)}
+                        </div>
+                      )}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-400">
+                        {safeValue(card.company, "Organización")}
+                      </p>
+                      <h3 className="mt-1 text-xl font-semibold text-zinc-900">
+                        {safeValue(card.full_name, "Nombre no disponible")}
+                      </h3>
+                      <p className="text-xs text-zinc-500">
+                        {safeValue(card.position, "Cargo no especificado")}
+                      </p>
+                    </div>
+                  </div>
+                  {showExampleBadge && (
+                    <span className="inline-flex items-center rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-amber-700">
+                      {exampleBadgeLabel}
                     </span>
-                    <p className="text-base font-semibold text-zinc-900">
-                      {card.full_name || (
-                        <span className="text-zinc-400">No proporcionado</span>
-                      )}
-                    </p>
+                  )}
+                </div>
+
+                <div className="rounded-2xl border border-zinc-100 bg-zinc-50/60 p-4">
+                  <div className="grid grid-cols-1 gap-3 text-xs text-zinc-600">
+                    <div>
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.4em] text-zinc-400">
+                        Correo
+                      </p>
+                      <p className="mt-1 break-all text-sm font-medium text-zinc-900">
+                        {safeValue(card.email, "Sin correo")}
+                      </p>
+                    </div>
+                    <div className="grid gap-1">
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.4em] text-zinc-400">
+                        Teléfono
+                      </p>
+                      <div className="flex flex-wrap items-baseline gap-1.5">
+                        <span className="text-xs text-zinc-500">
+                          {safeValue(card.code_phone, "+57")}
+                        </span>
+                        <span className="text-sm font-semibold text-zinc-900">
+                          {safeValue(card.phone, "Sin teléfono")}
+                        </span>
+                      </div>
+                    </div>
                   </div>
-                  <div className="grid gap-2 sm:grid-cols-2 sm:gap-3">
-                    <p>
-                      <span className="font-medium text-zinc-500">
-                        Correo:&nbsp;
-                      </span>
-                      {card.email || (
-                        <span className="text-zinc-400">No proporcionado</span>
-                      )}
-                    </p>
-                    <p>
-                      <span className="font-medium text-zinc-500">
-                        Teléfono:&nbsp;
-                      </span>
-                      {card.phone || (
-                        <span className="text-zinc-400">No proporcionado</span>
-                      )}
-                    </p>
-                    <p>
-                      <span className="font-medium text-zinc-500">
-                        Empresa:&nbsp;
-                      </span>
-                      {card.company || (
-                        <span className="text-zinc-400">No proporcionado</span>
-                      )}
-                    </p>
-                    <p>
-                      <span className="font-medium text-zinc-500">
-                        Cargo:&nbsp;
-                      </span>
-                      {card.position || (
-                        <span className="text-zinc-400">No proporcionado</span>
-                      )}
-                    </p>
-                  </div>
-                  <div className="pt-3">
-                    <button
-                      type="button"
-                      onClick={() => downloadVCard(card)}
-                      className="inline-flex items-center rounded-lg bg-zinc-900 px-4 py-2 text-xs font-semibold text-white transition hover:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-zinc-400 focus:ring-offset-2 focus:ring-offset-white"
-                    >
-                      Guardar vCard
-                    </button>
-                  </div>
+                </div>
+
+                <div className="flex flex-wrap gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => downloadVCard(card)}
+                    className="flex-1 rounded-2xl bg-zinc-900 px-3.5 py-2.5 text-xs font-semibold text-white transition hover:bg-zinc-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-300 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
+                  >
+                    Guardar VCard
+                  </button>
                 </div>
               </div>
             </li>
